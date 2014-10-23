@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:amq="http://activemq.apache.org/schema/core"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+            http://camel.apache.org/schema/spring
+            http://camel.apache.org/schema/spring/camel-spring.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util-3.1.xsd
+            http://activemq.apache.org/schema/core
+            http://activemq.apache.org/schema/core/activemq-core.xsd">
+
+    <amq:broker useJmx="false" persistent="false" id="test-camelot-broker">
+        <amq:transportConnectors>
+            <amq:transportConnector uri="tcp://${activemq.embedded.bind}"/>
+        </amq:transportConnectors>
+    </amq:broker>
+
+    <amq:connectionFactory id="jmsFactory" brokerURL="vm://${activemq.embedded.bind}"/>
+
+    <bean id="jmsConfig" class="org.apache.camel.component.jms.JmsConfiguration">
+        <property name="connectionFactory" ref="jmsFactory"/>
+        <property name="transacted" value="false"/>
+    </bean>
+
+    <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+        <property name="configuration" ref="jmsConfig"/>
+    </bean>
+
+    <!-- Beans -->
+    <bean id="configurationProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>test.properties</value>
+            </list>
+        </property>
+        <property name="properties">
+            <util:properties>
+                <prop key="activemq.embedded.bind">localhost:#{T(ru.yandex.qatools.fsm.camel.SocketUtil).findFreePort()}</prop>
+            </util:properties>
+        </property>
+    </bean>
+
+    <bean id="testAggregator" class="ru.yandex.qatools.fsm.camel.YatomataAggregationStrategy">
+        <constructor-arg value="ru.yandex.qatools.fsm.camel.TestStateMachine"/>
+    </bean>
+
+    <camelContext id="camelotCamelContext" xmlns="http://camel.apache.org/schema/spring">
+        <jmxAgent id="agent" disabled="true"/>
+        <threadPoolProfile id="yatomataDefaultProfile" defaultProfile="true" maxPoolSize="64"/>
+        <endpoint id="events.input" uri="activemq:queue:events.input"/>
+        <endpoint id="events.output" uri="direct:events.stop"/>
+
+        <route id="test-aggregator">
+            <from uri="seda:queue:test"/>
+            <log message="${in.body.class.simpleName}"/>
+            <aggregate strategyRef="testAggregator">
+                <correlationExpression>
+                    <simple>${in.body.uuid}</simple>
+                </correlationExpression>
+                <completionPredicate>
+                    <method bean="testAggregator" method="isCompleted"/>
+                </completionPredicate>
+                <to uri="seda:queue:done"/>
+            </aggregate>
+        </route>
+
+        <route id="done">
+            <from uri="seda:queue:done"/>
+            <to ref="events.output"/>
+        </route>
+
+        <route id="stopped">
+            <from ref="events.output"/>
+            <stop/>
+        </route>
+    </camelContext>
+</beans>
