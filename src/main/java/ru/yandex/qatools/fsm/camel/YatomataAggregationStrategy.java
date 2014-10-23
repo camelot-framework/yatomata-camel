@@ -1,8 +1,7 @@
 package ru.yandex.qatools.fsm.camel;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Header;
-import org.apache.camel.Headers;
+import org.apache.camel.*;
+import org.apache.camel.impl.DefaultCamelBeanPostProcessor;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,11 +13,12 @@ import java.lang.reflect.InvocationTargetException;
 import static java.lang.String.format;
 import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.*;
 
-public class YatomataAggregationStrategy<T> implements AggregationStrategy {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+public class YatomataAggregationStrategy<T> implements AggregationStrategy, CamelContextAware {
+    public static final String FINISHED_EXCHANGE = "YatomataFinishedExchange";
+    private static final Logger logger = LoggerFactory.getLogger(YatomataAggregationStrategy.class);
     private final YatomataCamelFSMBuilder<T> fsmEngineBuilder;
     private final Class<T> fsmClass;
-    public static final String FINISHED_EXCHANGE = "YatomataFinishedExchange";
+    private CamelContext camelContext;
 
     public YatomataAggregationStrategy(Class<T> fsmClass) {
         this.fsmClass = fsmClass;
@@ -57,17 +57,26 @@ public class YatomataAggregationStrategy<T> implements AggregationStrategy {
     }
 
     protected void injectFields(Object procInstance, Exchange exchange) {
+        try {
+            DefaultCamelBeanPostProcessor processor = new DefaultCamelBeanPostProcessor(camelContext);
+            processor.postProcessBeforeInitialization(procInstance, null);
+            if (procInstance instanceof CamelContextAware) {
+                ((CamelContextAware) procInstance).setCamelContext(camelContext);
+            }
+        } catch (Exception e) {
+            logger.error("Could not autowire the Spring or Camel context fields: ", e);
+        }
         for (Field field : getFieldsInClassHierarchy(procInstance.getClass())) {
             try {
                 boolean oldAccessible = field.isAccessible();
                 if (!field.isAccessible()) {
                     field.setAccessible(true);
                 }
-                if (getAnnotation(field, Header.class) != null) {
-                    String headerName = (String) getAnnotationValue(field, Header.class, "value");
+                if (getAnnotation(field, InjectHeader.class) != null) {
+                    String headerName = (String) getAnnotationValue(field, InjectHeader.class, "value");
                     field.set(procInstance, exchange.getIn().getHeader(headerName));
                 }
-                if (getAnnotation(field, Headers.class) != null) {
+                if (getAnnotation(field, InjectHeaders.class) != null) {
                     field.set(procInstance, exchange.getIn().getHeaders());
                 }
                 field.setAccessible(oldAccessible);
@@ -75,5 +84,15 @@ public class YatomataAggregationStrategy<T> implements AggregationStrategy {
                 logger.error("Inject field " + field.getName() + " of FSM " + procInstance + " error: ", e);
             }
         }
+    }
+
+    @Override
+    public void setCamelContext(CamelContext camelContext) {
+        this.camelContext = camelContext;
+    }
+
+    @Override
+    public CamelContext getCamelContext() {
+        return camelContext;
     }
 }

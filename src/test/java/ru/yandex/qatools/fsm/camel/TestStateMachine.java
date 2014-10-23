@@ -1,5 +1,7 @@
 package ru.yandex.qatools.fsm.camel;
 
+import org.apache.camel.CamelContext;
+import org.apache.camel.CamelContextAware;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import ru.yandex.qatools.fsm.annotations.*;
@@ -14,10 +16,24 @@ import java.io.Serializable;
         @Transit(from = TestStateMachine.UndefinedState.class, to = TestStateMachine.ProgressState.class, on = TestStateMachine.TStartProgress.class),
         @Transit(from = TestStateMachine.ProgressState.class, to = TestStateMachine.FinishedState.class, on = TestStateMachine.TFinishProgress.class, stop = true),
 })
-public class TestStateMachine {
+public class TestStateMachine implements CamelContextAware {
 
     @Produce(uri = "seda:queue:done")
     private ProducerTemplate doneQueue;
+
+    @InjectHeader("uuid")
+    String uuid;
+    private CamelContext camelContext;
+
+    @Override
+    public void setCamelContext(CamelContext camelContext) {
+        this.camelContext = camelContext;
+    }
+
+    @Override
+    public CamelContext getCamelContext() {
+        return camelContext;
+    }
 
     public static abstract class TState implements Serializable {
         TEvent event;
@@ -65,6 +81,13 @@ public class TestStateMachine {
 
     @OnTransit
     public void entryFinishedState(FinishedState newState, TFinishProgress event) {
+        if (uuid == null) {
+            throw new RuntimeException("UUID must not be null!");
+        }
+        if (camelContext == null) {
+            throw new RuntimeException("CamelContext must not be null!");
+        }
+        doneQueue.sendBody(uuid);
     }
 
     @NewState

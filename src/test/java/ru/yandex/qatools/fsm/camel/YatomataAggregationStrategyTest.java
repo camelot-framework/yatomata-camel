@@ -27,6 +27,9 @@ public class YatomataAggregationStrategyTest {
     @EndpointInject(uri = "mock:seda:queue:done")
     protected MockEndpoint endpoint;
 
+    @EndpointInject(uri = "mock:direct:events.stop")
+    protected MockEndpoint endpointStop;
+
     @Produce(uri = "seda:queue:test")
     protected ProducerTemplate execute;
 
@@ -42,9 +45,10 @@ public class YatomataAggregationStrategyTest {
     public void testFSM() throws Exception {
         endpoint.expectedMessageCount(1);
         endpoint.expectedBodyReceived().body().isInstanceOf(FinishedState.class);
+        endpointStop.expectedMinimumMessageCount(2);
         execute.sendBody(new TStartProgress("test"));
-        execute.sendBody(new TFinishProgress("test"));
-
-        endpoint.assertIsSatisfied();
+        execute.sendBodyAndHeader(new TFinishProgress("test"), "uuid", "Hello:)");
+        endpoint.assertIsSatisfied(2000);
+        endpointStop.assertIsSatisfied(2000);
     }
 }
