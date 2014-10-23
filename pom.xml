@@ -7,6 +7,42 @@
     <groupId>ru.yandex.qatools</groupId>
     <artifactId>yatomata-camel</artifactId>
     <version>1.0-SNAPSHOT</version>
+
+    <name>Yandex Yatomata Camel</name>
+    <description>Camel integration for Yatomata FSM </description>
+    <url>https://github.com/camelot-framework/yatomata-camel</url>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <organization>
+        <name>Yandex</name>
+        <url>http://company.yandex.com</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/camelot-framework/yatomata-camel</url>
+        <connection>scm:git@github.com:camelot-framework/yatomata-camel.git</connection>
+        <developerConnection>scm:git:git@github.com:camelot-framework/yatomata-camel.git</developerConnection>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issue Tracker</system>
+        <url>https://github.com/camelot-framework/yatomata-camel/issues</url>
+    </issueManagement>
+
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.7</java.version>
@@ -25,12 +61,6 @@
         <activemq.version>5.10.0</activemq.version>
         <spring.version>3.2.10.RELEASE</spring.version>
     </properties>
-
-    <scm>
-        <url>https://github.com/camelot-framework/yatomata-camel</url>
-        <connection>scm:git@github.com:camelot-framework/yatomata-camel.git</connection>
-        <developerConnection>scm:git:git@github.com:camelot-framework/yatomata-camel.git</developerConnection>
-    </scm>
 
     <dependencies>
         <dependency>
