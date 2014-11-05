@@ -38,9 +38,17 @@
         </property>
         <property name="properties">
             <util:properties>
-                <prop key="activemq.embedded.bind">localhost:#{T(ru.yandex.qatools.fsm.camel.SocketUtil).findFreePort()}</prop>
+                <prop key="activemq.embedded.bind">
+                    localhost:#{T(ru.yandex.qatools.fsm.camel.SocketUtil).findFreePort()}
+                </prop>
             </util:properties>
         </property>
+    </bean>
+
+    <bean id="testProcessor" class="ru.yandex.qatools.fsm.camel.PluggableProcessor">
+        <constructor-arg>
+            <bean class="ru.yandex.qatools.fsm.camel.TestProcessor"/>
+        </constructor-arg>
     </bean>
 
     <bean id="testAggregator" class="ru.yandex.qatools.fsm.camel.YatomataAggregationStrategy">
@@ -52,6 +60,12 @@
         <threadPoolProfile id="yatomataDefaultProfile" defaultProfile="true" maxPoolSize="64"/>
         <endpoint id="events.input" uri="activemq:queue:events.input"/>
         <endpoint id="events.output" uri="direct:events.stop"/>
+
+        <route id="test-processor">
+            <from uri="seda:queue:testproc"/>
+            <process ref="testProcessor"/>
+            <to uri="seda:queue:testprocdone"/>
+        </route>
 
         <route id="test-aggregator">
             <from uri="seda:queue:test"/>
@@ -65,6 +79,11 @@
                 </completionPredicate>
                 <to uri="seda:queue:done"/>
             </aggregate>
+        </route>
+
+        <route id="testprocdone">
+            <from uri="seda:queue:testprocdone"/>
+            <to ref="events.output"/>
         </route>
 
         <route id="done">

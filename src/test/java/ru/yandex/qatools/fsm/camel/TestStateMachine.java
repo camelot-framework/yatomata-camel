@@ -5,12 +5,10 @@ import org.apache.camel.CamelContextAware;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import ru.yandex.qatools.fsm.annotations.*;
+import ru.yandex.qatools.fsm.camel.annotations.InjectHeader;
 
 import java.io.Serializable;
 
-/**
- * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
- */
 @FSM(start = TestStateMachine.UndefinedState.class)
 @Transitions({
         @Transit(from = TestStateMachine.UndefinedState.class, to = TestStateMachine.ProgressState.class, on = TestStateMachine.TStartProgress.class),
