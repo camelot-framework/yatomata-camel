@@ -52,6 +52,31 @@ Now you can use `myFSM` as an ordinary aggregation strategy:
     </aggregate>
 ```
 
+You can also use the more declarative processors with the `@Processor` annotation. 
+Create the processor class, declaring the separate methods for every body type of your message:
+```java
+public class MyProcessor {
+    @Processor(bodyType = String.class)
+    public String process(@Body String body) {
+        return body + "processed";
+    }
+}
+```
+
+Add the processor bean to your Spring context:
+```xml
+    <bean id="myProcessor" class="ru.yandex.qatools.fsm.camel.PluggableProcessor">
+        <constructor-arg>
+            <bean class="com.me.MyProcessor"/>
+        </constructor-arg>
+    </bean>
+```
+
+Now you can use `myProcessor` as an ordinary processor in your camel routes:
+```xml
+    <process ref="myProcessor"/>
+```
+
 ### Camel context injection
 
 You can use `@InjectHeader` and `@InjectHeaders` annotations to inject the current exchange context into your FSM:

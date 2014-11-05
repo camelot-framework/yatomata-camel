@@ -11,6 +11,9 @@ public class TestProcessor implements CamelContextAware {
 
     @Processor(bodyType = String.class)
     public String process(@Body String body) {
+        if (camelContext == null) {
+            throw new RuntimeException("Failed to verify camel context");
+        }
         return body + "processed";
     }
 

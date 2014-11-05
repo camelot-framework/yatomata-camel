@@ -45,10 +45,9 @@
         </property>
     </bean>
 
+    <bean id="procBean" class="ru.yandex.qatools.fsm.camel.TestProcessor"/>
     <bean id="testProcessor" class="ru.yandex.qatools.fsm.camel.PluggableProcessor">
-        <constructor-arg>
-            <bean class="ru.yandex.qatools.fsm.camel.TestProcessor"/>
-        </constructor-arg>
+        <constructor-arg ref="procBean"/>
     </bean>
 
     <bean id="testAggregator" class="ru.yandex.qatools.fsm.camel.YatomataAggregationStrategy">
