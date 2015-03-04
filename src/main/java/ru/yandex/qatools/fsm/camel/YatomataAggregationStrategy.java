@@ -13,7 +13,7 @@ import static java.lang.String.format;
 /**
  * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
  */
-public class YatomataAggregationStrategy<T> extends BasicStrategy implements AggregationStrategy{
+public class YatomataAggregationStrategy<T> extends BasicStrategy implements AggregationStrategy {
 
     public static final String FINISHED_EXCHANGE = "YatomataFinishedExchange";
 
@@ -27,12 +27,22 @@ public class YatomataAggregationStrategy<T> extends BasicStrategy implements Agg
         this.fsmEngineBuilder = new YatomataCamelFSMBuilder<>(fsmClass);
     }
 
+    protected final Class<T> getFsmClass() {
+        return fsmClass;
+    }
+
+    protected final T buildFsmInstance(Exchange event)
+            throws InstantiationException, IllegalAccessException {
+        T fsm = fsmClass.newInstance();
+        injectFields(fsm, event);
+        return fsm;
+    }
+
     @Override
     public Exchange aggregate(Exchange state, Exchange event) {
         Object result = state == null ? null : state.getIn().getBody();
         try {
-            T fsm = fsmClass.newInstance();
-            injectFields(fsm, event);
+            T fsm = buildFsmInstance(event);
 
             Yatomata<T> fsmEngine;
             if (result != null) {
