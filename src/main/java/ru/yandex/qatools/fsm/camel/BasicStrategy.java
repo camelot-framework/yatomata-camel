@@ -14,14 +14,21 @@ import ru.yandex.qatools.fsm.camel.annotations.InjectHeaders;
 
 import java.lang.reflect.Field;
 
-import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.*;
+import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.getAnnotationValue;
+import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.getFieldsInClassHierarchy;
 
+/**
+ * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
+ */
 public abstract class BasicStrategy implements CamelContextAware, ApplicationContextAware {
-    protected static final Logger logger = LoggerFactory.getLogger(YatomataAggregationStrategy.class);
-    public static final AutowiredAnnotationBeanPostProcessor beanPostProcessor = new AutowiredAnnotationBeanPostProcessor();
 
-    protected CamelContext camelContext;
-    protected ApplicationContext applicationContext;
+    private static final AutowiredAnnotationBeanPostProcessor BEAN_PROCESSOR
+            = new AutowiredAnnotationBeanPostProcessor();
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private CamelContext camelContext;
+    private ApplicationContext applicationContext;
 
     protected void injectFields(Object procInstance, Exchange exchange) {
         try {
@@ -35,8 +42,8 @@ public abstract class BasicStrategy implements CamelContextAware, ApplicationCon
         }
         try {
             if (applicationContext != null) {
-                beanPostProcessor.setBeanFactory(applicationContext.getAutowireCapableBeanFactory());
-                beanPostProcessor.processInjection(procInstance);
+                BEAN_PROCESSOR.setBeanFactory(applicationContext.getAutowireCapableBeanFactory());
+                BEAN_PROCESSOR.processInjection(procInstance);
                 if (procInstance instanceof ApplicationContextAware) {
                     ((ApplicationContextAware) procInstance).setApplicationContext(applicationContext);
                 }
@@ -50,11 +57,11 @@ public abstract class BasicStrategy implements CamelContextAware, ApplicationCon
                 if (!field.isAccessible()) {
                     field.setAccessible(true);
                 }
-                if (getAnnotation(field, InjectHeader.class) != null) {
+                if (field.isAnnotationPresent(InjectHeader.class)) {
                     String headerName = (String) getAnnotationValue(field, InjectHeader.class, "value");
                     field.set(procInstance, exchange.getIn().getHeader(headerName));
                 }
-                if (getAnnotation(field, InjectHeaders.class) != null) {
+                if (field.isAnnotationPresent(InjectHeaders.class)) {
                     field.set(procInstance, exchange.getIn().getHeaders());
                 }
                 field.setAccessible(oldAccessible);
@@ -79,4 +86,8 @@ public abstract class BasicStrategy implements CamelContextAware, ApplicationCon
         this.applicationContext = applicationContext;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
+    public ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
 }

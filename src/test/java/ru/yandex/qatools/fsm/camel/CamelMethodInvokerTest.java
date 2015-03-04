@@ -39,7 +39,7 @@ public class CamelMethodInvokerTest {
     public void init() {
         mck = mock(TestCamelClass.class);
         body = new Object();
-        headers = new HashMap<String, Object>();
+        headers = new HashMap<>();
         headers.put("test", header);
     }
 

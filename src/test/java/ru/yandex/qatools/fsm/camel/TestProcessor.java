@@ -6,8 +6,8 @@ import org.apache.camel.CamelContextAware;
 import ru.yandex.qatools.fsm.camel.annotations.Processor;
 
 public class TestProcessor implements CamelContextAware {
-    private CamelContext camelContext;
 
+    private CamelContext camelContext;
 
     @Processor(bodyType = String.class)
     public String process(@Body String body) {

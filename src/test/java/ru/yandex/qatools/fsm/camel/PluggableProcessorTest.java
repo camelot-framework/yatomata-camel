@@ -23,6 +23,7 @@ public class PluggableProcessorTest {
     final String DAD_ON_WITH_MAP = "DAD_ON_WITH_MAP";
 
     @Processor(bodyType = Dad.class)
+    @SuppressWarnings("UnusedParameters")
     public String on(@Body Dad o, @Headers Map map) {
         return DAD_ON_WITH_MAP;
     }

@@ -6,10 +6,8 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
 import org.apache.camel.test.spring.MockEndpoints;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
@@ -29,13 +27,10 @@ public class TestProcessorTest {
     @Produce(uri = "seda:queue:testproc")
     protected ProducerTemplate execute;
 
-    @Rule
-    public TestWatcher rule = new TestWatcher() {
-        @Override
-        protected void starting(Description description) {
-            endpoint.reset();
-        }
-    };
+    @Before
+    public void setUp() throws Exception {
+        endpoint.reset();
+    }
 
     @Test
     public void testFSM() throws Exception {

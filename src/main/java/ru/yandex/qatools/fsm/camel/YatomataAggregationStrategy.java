@@ -2,18 +2,25 @@ package ru.yandex.qatools.fsm.camel;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.yandex.qatools.fsm.Yatomata;
 
 import java.lang.reflect.InvocationTargetException;
 
 import static java.lang.String.format;
 
+/**
+ * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
+ */
 public class YatomataAggregationStrategy<T> extends BasicStrategy implements AggregationStrategy{
+
     public static final String FINISHED_EXCHANGE = "YatomataFinishedExchange";
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final YatomataCamelFSMBuilder<T> fsmEngineBuilder;
     private final Class<T> fsmClass;
-
 
     public YatomataAggregationStrategy(Class<T> fsmClass) {
         this.fsmClass = fsmClass;
@@ -36,7 +43,8 @@ public class YatomataAggregationStrategy<T> extends BasicStrategy implements Agg
             result = fsmEngine.fire(event.getIn().getBody());
             event.getIn().setHeader(FINISHED_EXCHANGE, fsmEngine.isCompleted());
         } catch (Exception e) {
-            logger.error(format("Failed to process event %s with FSM %s!", event.getIn().getBody(), fsmClass), e);
+            logger.error(format("Failed to process event %s with FSM %s!",
+                    event.getIn().getBody(), fsmClass), e);
         }
         if (result != null) {
             event.getIn().setBody(result);

@@ -4,7 +4,7 @@ import ru.yandex.qatools.fsm.Yatomata;
 import ru.yandex.qatools.fsm.impl.YatomataImpl;
 
 /**
- * @author smecsia
+ * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
  */
 public class YatomataCamelFSMBuilder<T> {
     final Class<T> fsmClass;
@@ -20,9 +20,9 @@ public class YatomataCamelFSMBuilder<T> {
     public Yatomata<T> build(Object state, T fsmInstance) {
         try {
             if (state == null) {
-                return new YatomataImpl<T>(fsmClass, fsmInstance);
+                return new YatomataImpl<>(fsmClass, fsmInstance);
             }
-            return new YatomataImpl<T>(fsmClass, fsmInstance, state);
+            return new YatomataImpl<>(fsmClass, fsmInstance, state);
         } catch (Exception e) {
             throw new RuntimeException("Could not initialize the FSM Engine for FSM " + fsmClass, e);
         }

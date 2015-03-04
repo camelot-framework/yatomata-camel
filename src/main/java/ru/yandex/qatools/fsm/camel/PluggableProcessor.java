@@ -6,13 +6,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author: Ilya Sadykov (mailto: smecsia@yandex-team.ru)
+ * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
  */
 public class PluggableProcessor extends BasicStrategy implements Processor {
 
-    final protected Logger logger = LoggerFactory.getLogger(getClass());
-    final private PluggableProcessorDispatcher dispatcher;
-    final private Object processor;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final PluggableProcessorDispatcher dispatcher;
+    private final Object processor;
 
     public PluggableProcessor(Object processor, Class procClass) {
         this.processor = processor;
