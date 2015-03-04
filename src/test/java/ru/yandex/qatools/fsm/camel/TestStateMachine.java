@@ -6,7 +6,7 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import ru.yandex.qatools.fsm.annotations.*;
 import ru.yandex.qatools.fsm.camel.annotations.InjectHeader;
-import ru.yandex.qatools.fsm.camel.annotations.OnTimer;
+import ru.yandex.qatools.fsm.camel.annotations.OnTimeout;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -100,7 +100,7 @@ public class TestStateMachine implements CamelContextAware {
         doneQueue.sendBody(uuid);
     }
 
-    @OnTimer
+    @OnTimeout
     public void onTimer(final int index, final int total, final long timeout) {
         if (uuid == null) {
             throw new RuntimeException("UUID must not be null!");
