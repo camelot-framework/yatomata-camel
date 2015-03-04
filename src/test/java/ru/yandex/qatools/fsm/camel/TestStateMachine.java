@@ -6,8 +6,10 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import ru.yandex.qatools.fsm.annotations.*;
 import ru.yandex.qatools.fsm.camel.annotations.InjectHeader;
+import ru.yandex.qatools.fsm.camel.annotations.OnTimeout;
 
 import java.io.Serializable;
+import java.util.HashMap;
 
 @FSM(start = TestStateMachine.UndefinedState.class)
 @Transitions({
@@ -16,11 +18,14 @@ import java.io.Serializable;
 })
 public class TestStateMachine implements CamelContextAware {
 
+    public static final String HEADER_KEY = "uuid";
+
     @Produce(uri = "seda:queue:done")
     private ProducerTemplate doneQueue;
 
-    @InjectHeader("uuid")
+    @InjectHeader(HEADER_KEY)
     String uuid;
+
     private CamelContext camelContext;
 
     @Override
@@ -77,6 +82,13 @@ public class TestStateMachine implements CamelContextAware {
         }
     }
 
+    @NewState
+    public TState initState(Class<? extends TState> stateClass, TEvent event) throws Exception {
+        TState res = stateClass.newInstance();
+        res.event = event;
+        return res;
+    }
+
     @OnTransit
     public void entryFinishedState(FinishedState newState, TFinishProgress event) {
         if (uuid == null) {
@@ -88,11 +100,18 @@ public class TestStateMachine implements CamelContextAware {
         doneQueue.sendBody(uuid);
     }
 
-    @NewState
-    public TState initState(Class<? extends TState> stateClass, TEvent event) throws Exception {
-        TState res = stateClass.newInstance();
-        res.event = event;
-        return res;
+    @OnTimeout
+    public void onTimer(final int index, final int total, final long timeout) {
+        if (uuid == null) {
+            throw new RuntimeException("UUID must not be null!");
+        }
+        if (camelContext == null) {
+            throw new RuntimeException("CamelContext must not be null!");
+        }
+        doneQueue.sendBodyAndHeaders(uuid, new HashMap<String, Object>() {{
+            put("index", index);
+            put("total", total);
+            put("timeout", timeout);
+        }});
     }
-
 }

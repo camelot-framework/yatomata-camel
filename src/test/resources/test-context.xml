@@ -54,6 +54,10 @@
         <constructor-arg value="ru.yandex.qatools.fsm.camel.TestStateMachine"/>
     </bean>
 
+    <bean id="testAggregatorWithTimeout" class="ru.yandex.qatools.fsm.camel.YatomataTimeoutAwareAggregationStrategy">
+        <constructor-arg value="ru.yandex.qatools.fsm.camel.TestStateMachine"/>
+    </bean>
+
     <camelContext id="camelotCamelContext" xmlns="http://camel.apache.org/schema/spring">
         <jmxAgent id="agent" disabled="true"/>
         <threadPoolProfile id="yatomataDefaultProfile" defaultProfile="true" maxPoolSize="64"/>
@@ -76,6 +80,17 @@
                 <completionPredicate>
                     <method bean="testAggregator" method="isCompleted"/>
                 </completionPredicate>
+                <to uri="seda:queue:done"/>
+            </aggregate>
+        </route>
+
+        <route id="test-aggregator-with-timeout">
+            <from uri="seda:queue:test-timeout"/>
+            <log message="${in.body.class.simpleName}"/>
+            <aggregate strategyRef="testAggregatorWithTimeout" completionTimeout="500">
+                <correlationExpression>
+                    <simple>${in.body.uuid}</simple>
+                </correlationExpression>
                 <to uri="seda:queue:done"/>
             </aggregate>
         </route>

@@ -5,25 +5,25 @@ import ru.yandex.qatools.fsm.camel.annotations.Processor;
 import ru.yandex.qatools.fsm.camel.common.CallException;
 import ru.yandex.qatools.fsm.camel.common.DispatchException;
 import ru.yandex.qatools.fsm.camel.common.MetadataException;
+import ru.yandex.qatools.fsm.camel.util.ReflectionUtil.AnnotatedMethodHandler;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.getAnnotation;
-import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.getAnnotationValue;
+import static ru.yandex.qatools.fsm.camel.util.ReflectionUtil.forEachAnnotatedMethod;
 
 /**
  * Dispatcher that allows to dispatch messages to the plugins
  *
- * @author: Ilya Sadykov (mailto: smecsia@yandex-team.ru)
+ * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
  */
 public class PluggableProcessorDispatcher {
 
     private ProcMethodInfo fallBackProcessor = null;
     final private Object processor;
     final private Class procClass;
-    private final Map<Class, ProcMethodInfo> procCallers = new HashMap<Class, ProcMethodInfo>();
+    private final Map<Class, ProcMethodInfo> procCallers = new HashMap<>();
 
     public PluggableProcessorDispatcher(Object processor, Class procClass) {
         this.processor = processor;
@@ -36,7 +36,8 @@ public class PluggableProcessorDispatcher {
     }
 
     /**
-     * Dispatches the message to the processor and returns the result of the processor's method invocation
+     * Dispatches the message to the processor and returns the result
+     * of the processor's method invocation
      *
      * @param body    body of the received exchange
      * @param headers headers of the received exchange
@@ -51,11 +52,14 @@ public class PluggableProcessorDispatcher {
         ProcMethodInfo info = findProcMethodByClass(body.getClass());
         if (info == null) {
             if (fallBackProcessor == null) {
-                throw new DispatchException("Unable to dispatch the plugin " + processor + " with body of type " + body.getClass() + ": processor not found!");
+                throw new DispatchException(String.format(
+                        "Unable to dispatch the plugin %s with body of type %s: processor not found!",
+                        processor, body.getClass()));
             } else {
                 if (!fallBackProcessor.bodyType.isAssignableFrom(body.getClass())) {
-                    throw new DispatchException("Unable to dispatch the plugin " + processor + " with body of type " + body.getClass() + ". " +
-                            fallBackProcessor.bodyType + " is not assignable from " + body.getClass() + "!");
+                    throw new DispatchException(String.format(
+                            "Unable to dispatch the plugin %s with body of type %s. %s is not assignable from %s!",
+                            processor, body.getClass(), fallBackProcessor.bodyType, body.getClass()));
                 }
                 info = fallBackProcessor;
             }
@@ -105,35 +109,35 @@ public class PluggableProcessorDispatcher {
      * Perform the processors scan
      */
     private synchronized void scanPluginProcessors() throws MetadataException {
-        for (Method method : procClass.getMethods()) {
-            try {
-                Object proc = getAnnotation(method, Processor.class);
-                if (proc != null) {
-                    final Class bodyType = (Class) getAnnotationValue(proc, "bodyType");
-                    ProcMethodInfo mInfo = getProcMethodInfo(method, bodyType);
-                    if (procCallers.containsKey(bodyType)) {
-                        throw new MetadataException("Plugin " + procClass + " must not contain more than 1 processor for the body type '" +
-                                bodyType + "'!");
-                    }
-                    procCallers.put(bodyType, mInfo);
+        forEachAnnotatedMethod(procClass, Processor.class, new AnnotatedMethodHandler<Processor>() {
+            @Override
+            public void handle(Method method, Processor proc) {
+                ProcMethodInfo mInfo = getProcMethodInfo(method, proc.bodyType());
+                if (procCallers.containsKey(proc.bodyType())) {
+                    throw new MetadataException(String.format(
+                            "Plugin %s must not contain more than 1 processor for the body type '%s'!",
+                            procClass, proc.bodyType()));
                 }
-
-                Object fbProc = getAnnotation(method, FallbackProcessor.class);
-                if (fbProc != null) {
-                    if (fallBackProcessor != null) {
-                        throw new MetadataException("Plugin " + procClass + " must not contain more than 1 fallback processor!");
-                    }
-                    fallBackProcessor = getProcMethodInfo(method, (Class) getAnnotationValue(fbProc, "baseType"));
-                }
-
-            } catch (Exception e) {
-                throw new MetadataException("Failed to read annotation of method " + method.getName() +
-                        " of class " + procClass, e);
+                procCallers.put(proc.bodyType(), mInfo);
             }
-        }
+        });
+
+        forEachAnnotatedMethod(procClass, FallbackProcessor.class, new AnnotatedMethodHandler<FallbackProcessor>() {
+            boolean foundFallBackProcessor;
+            @Override
+            public void handle(Method method, FallbackProcessor annotation) {
+                if (foundFallBackProcessor) {
+                    throw new MetadataException(String.format(
+                            "Plugin %s must not contain more than 1 fallback processor!",
+                            procClass));
+                }
+                foundFallBackProcessor = true;
+                fallBackProcessor = getProcMethodInfo(method, annotation.baseType());
+            }
+        });
     }
 
-    private synchronized ProcMethodInfo getProcMethodInfo(Method method, Class bodyType) throws Exception {
+    private synchronized ProcMethodInfo getProcMethodInfo(Method method, Class bodyType) {
         ProcMethodInfo mInfo = new ProcMethodInfo(bodyType, new CamelMethodInvoker(processor, method));
         Class<?>[] parameterTypes = method.getParameterTypes();
         if (parameterTypes.length < 1) {
