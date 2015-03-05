@@ -64,9 +64,10 @@ public class YatomataAggregationStrategyTest {
 
         endpointStop.expectedMessageCount(2);
         endpointStop.message(0).body().isEqualTo(HEADER_VALUE);
-        endpointStop.message(0).header("index").isEqualTo(-1);
-        endpointStop.message(0).header("total").isEqualTo(-1);
-        endpointStop.message(0).header("timeout").isEqualTo(500);
+        endpointStop.message(0).header("ontimeout.params.state").isInstanceOf(ProgressState.class);
+        endpointStop.message(0).header("ontimeout.params.index").isEqualTo(-1);
+        endpointStop.message(0).header("ontimeout.params.total").isEqualTo(-1);
+        endpointStop.message(0).header("ontimeout.params.timeout").isEqualTo(500);
         endpointStop.message(1).body().isInstanceOf(ProgressState.class);
         endpointStop.message(1).header(HEADER_KEY).isEqualTo(HEADER_VALUE);
 

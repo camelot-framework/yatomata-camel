@@ -4,6 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.processor.aggregate.TimeoutAwareAggregationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.fsm.Yatomata;
 import ru.yandex.qatools.fsm.camel.annotations.OnTimeout;
 import ru.yandex.qatools.fsm.camel.util.ReflectionUtil.AnnotatedMethodHandler;
 
@@ -28,15 +29,16 @@ public class YatomataTimeoutAwareAggregationStrategy<T>
     @Override
     public void timeout(Exchange oldExchange, final int index, final int total, final long timeout) {
         try {
-            final T fsm = buildFsmInstance(oldExchange);
+            final Yatomata<T> fsmEngine = buildFsmEngine(oldExchange, oldExchange);
             forEachAnnotatedMethod(getFsmClass(), OnTimeout.class, new AnnotatedMethodHandler<OnTimeout>() {
                 @Override
                 public void handle(Method method, OnTimeout annotation) {
                     try {
-                        method.invoke(fsm, index, total, timeout);
+                        method.invoke(fsmEngine.getFSM(),
+                                fsmEngine.getCurrentState(), index, total, timeout);
                     } catch (Exception e) {
                         logger.error(format("Failed to invoke method '%s' on FSM %s!",
-                                method.getName(), fsm), e);
+                                method.getName(), fsmEngine.getFSM()), e);
                     }
                 }
             });
