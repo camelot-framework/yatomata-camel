@@ -31,25 +31,31 @@ public class YatomataAggregationStrategy<T> extends BasicStrategy implements Agg
         return fsmClass;
     }
 
-    protected final T buildFsmInstance(Exchange event)
+    private T buildFsmInstance(Exchange event)
             throws InstantiationException, IllegalAccessException {
         T fsm = fsmClass.newInstance();
         injectFields(fsm, event);
         return fsm;
     }
 
+    private Yatomata<T> buildFsmEngine(Exchange state, T fsm) {
+        if (state != null && state.getIn().getBody() != null) {
+            return fsmEngineBuilder.build(state.getIn().getBody(), fsm);
+        } else {
+            return fsmEngineBuilder.build(fsm);
+        }
+    }
+
+    protected Yatomata<T> buildFsmEngine(Exchange state, Exchange event)
+            throws InstantiationException, IllegalAccessException {
+        return buildFsmEngine(state, buildFsmInstance(event));
+    }
+
     @Override
     public Exchange aggregate(Exchange state, Exchange event) {
         Object result = state == null ? null : state.getIn().getBody();
         try {
-            T fsm = buildFsmInstance(event);
-
-            Yatomata<T> fsmEngine;
-            if (result != null) {
-                fsmEngine = fsmEngineBuilder.build(result, fsm);
-            } else {
-                fsmEngine = fsmEngineBuilder.build(fsm);
-            }
+            Yatomata<T> fsmEngine = buildFsmEngine(state, event);
             result = fsmEngine.fire(event.getIn().getBody());
             event.getIn().setHeader(FINISHED_EXCHANGE, fsmEngine.isCompleted());
         } catch (Exception e) {

@@ -101,7 +101,7 @@ public class TestStateMachine implements CamelContextAware {
     }
 
     @OnTimeout
-    public void onTimer(final int index, final int total, final long timeout) {
+    public void onTimeout(final ProgressState state, final int index, final int total, final long timeout) {
         if (uuid == null) {
             throw new RuntimeException("UUID must not be null!");
         }
@@ -109,9 +109,10 @@ public class TestStateMachine implements CamelContextAware {
             throw new RuntimeException("CamelContext must not be null!");
         }
         doneQueue.sendBodyAndHeaders(uuid, new HashMap<String, Object>() {{
-            put("index", index);
-            put("total", total);
-            put("timeout", timeout);
+            put("ontimeout.params.state", state);
+            put("ontimeout.params.index", index);
+            put("ontimeout.params.total", total);
+            put("ontimeout.params.timeout", timeout);
         }});
     }
 }
