@@ -4,6 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.yandex.qatools.fsm.camel.common.DispatchException;
 
 /**
  * @author Ilya Sadykov (mailto: smecsia@yandex-team.ru)
@@ -34,6 +35,8 @@ public class PluggableProcessor extends BasicStrategy implements Processor {
             if (event != null) {
                 result = dispatcher.dispatch(event, message.getIn().getHeaders());
             }
+        } catch (DispatchException e) {
+            logger.error(e.getMessage(), e.getCause());
         } catch (Exception e) {
             logger.error(processor + ": " + e.getMessage(), e);
         }

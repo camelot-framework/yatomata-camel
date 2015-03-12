@@ -49,6 +49,7 @@ public class PluggableProcessorDispatcher {
         if (body == null) {
             throw new DispatchException("Unable to dispatch the plugin " + processor + " with null body!");
         }
+
         ProcMethodInfo info = findProcMethodByClass(body.getClass());
         if (info == null) {
             if (fallBackProcessor == null) {
@@ -64,10 +65,13 @@ public class PluggableProcessorDispatcher {
                 info = fallBackProcessor;
             }
         }
+
         try {
             return info.caller.call(body, headers);
         } catch (CallException e) {
-            throw new DispatchException("Could not call the processor's method: ", e);
+            throw new DispatchException(String.format(
+                    "Could not call the method of plugin %s because of exception: ", processor
+            ), e);
         }
     }
 
